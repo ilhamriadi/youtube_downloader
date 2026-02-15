@@ -12,6 +12,26 @@ import yt_dlp
 
 # Configuration
 DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Find cookies file if exists
+COOKIES_FILE = None
+for cookie_name in ['www.youtube.com_cookies.txt', 'cookies.txt', 'youtube_cookies.txt']:
+    cookie_path = os.path.join(SCRIPT_DIR, cookie_name)
+    if os.path.exists(cookie_path):
+        COOKIES_FILE = cookie_path
+        break
+
+# Common yt-dlp options (to fix YouTube bot detection)
+COMMON_YDL_OPTS = {
+    'js_run_time': 'deno',  # Use Deno for JavaScript execution
+    'quiet': False,
+    'no_warnings': False,
+}
+
+if COOKIES_FILE:
+    print(f"✓ Cookies file found: {os.path.basename(COOKIES_FILE)}")
+    COMMON_YDL_OPTS['cookiefile'] = COOKIES_FILE
 
 
 def ensure_download_dir():
@@ -34,11 +54,10 @@ def download_video(url):
     ensure_download_dir()
 
     ydl_opts = {
+        **COMMON_YDL_OPTS,
         'format': 'bestvideo+bestaudio/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
-        'quiet': False,
-        'no_warnings': False,
     }
 
     print(f"\nDownloading video (best quality): {url}")
@@ -60,6 +79,7 @@ def download_audio(url):
     ensure_download_dir()
 
     ydl_opts = {
+        **COMMON_YDL_OPTS,
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
         'postprocessors': [{
@@ -67,8 +87,6 @@ def download_audio(url):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'quiet': False,
-        'no_warnings': False,
     }
 
     print(f"\nDownloading audio (MP3): {url}")
@@ -95,6 +113,7 @@ def download_with_quality_selection(url):
     try:
         # First, get available formats
         ydl_opts_info = {
+            'js_run_time': 'deno',
             'quiet': True,
             'no_warnings': True,
         }
@@ -160,11 +179,10 @@ def download_with_quality_selection(url):
         format_spec = f"{selected['format_id']}+bestaudio/best"
 
         ydl_opts = {
+            **COMMON_YDL_OPTS,
             'format': format_spec,
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
-            'quiet': False,
-            'no_warnings': False,
         }
 
         print(f"\nDownloading with {selected['resolution']} quality...")
@@ -185,11 +203,10 @@ def download_playlist(url):
     ensure_download_dir()
 
     ydl_opts = {
+        **COMMON_YDL_OPTS,
         'format': 'bestvideo+bestaudio/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(playlist_title)s', '%(playlist_index)s - %(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
-        'quiet': False,
-        'no_warnings': False,
         'ignoreerrors': True,  # Skip videos that fail
         'download_archive': os.path.join(DOWNLOAD_DIR, 'downloaded.txt'),  # Skip already downloaded
     }
@@ -220,6 +237,7 @@ def download_trimmed_video(url):
     try:
         # Get video info first
         ydl_opts_info = {
+            'js_run_time': 'deno',
             'quiet': True,
             'no_warnings': True,
         }
@@ -266,11 +284,10 @@ def download_trimmed_video(url):
         # Download only the section using download_ranges
         # This downloads ONLY the specified section, not the whole video
         ydl_opts = {
+            **COMMON_YDL_OPTS,
             'format': 'bestvideo+bestaudio/best',
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s_trimmed_%(start_time)s_to_(end_time)s.%(ext)s'),
             'merge_output_format': 'mp4',
-            'quiet': False,
-            'no_warnings': False,
             'download_ranges': lambda info, ctx: [{"start_time": start_sec, "end_time": end_sec}],
             'force_keyframes_at_cuts': True,  # Ensure smooth cuts at exact times
         }
@@ -318,9 +335,15 @@ def main():
     # Ensure download directory exists
     ensure_download_dir()
 
+    # Show cookies status
+    if COOKIES_FILE:
+        print(f"✓ Using cookies: {os.path.basename(COOKIES_FILE)}")
+    else:
+        print("ℹ No cookies file found (optional)")
+
     while True:
         show_menu()
-        choice = input("Select option (0-4): ").strip()
+        choice = input("Select option (0-5): ").strip()
 
         if choice == '0':
             print("\nGoodbye!")
