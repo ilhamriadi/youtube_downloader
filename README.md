@@ -8,6 +8,7 @@ A Python script to download YouTube videos and playlists with ease. Supports vid
 - **Download Audio Only (MP3)** - Extract audio as MP3 with 192kbps bitrate
 - **Manual Quality Selection** - Choose video quality manually from available formats
 - **Playlist Support** - Download entire playlists with auto-skip for existing files
+- **Download & Trim Video** - Download only a specific time range (no full download needed)
 
 ## Prerequisites
 
@@ -56,6 +57,7 @@ python youtube_downloader.py
 2. **Download Audio Only (MP3)** - Downloads and converts to MP3 format (192kbps)
 3. **Download with Quality Selection** - Shows all available formats and lets you choose
 4. **Download Playlist** - Downloads entire playlist with automatic folder creation
+5. **Download & Trim Video** - Downloads only a portion of the video (e.g., from minute 5 to 10) without downloading the full video
 
 ### Example
 
@@ -73,9 +75,10 @@ Checking prerequisites...
 2. Download Audio Only (MP3)
 3. Download with Quality Selection
 4. Download Playlist
+5. Download & Trim Video (Partial)
 0. Exit
 ==================================================
-Select option (0-4): 1
+Select option (0-5): 1
 
 Enter YouTube URL: https://youtube.com/watch?v=...
 ```
@@ -102,6 +105,7 @@ youtube-downloader/
 - Playlist downloads create a subfolder with the playlist name
 - The script skips already downloaded files (tracked in `downloads/downloaded.txt`)
 - FFmpeg is required for merging separate video and audio streams
+- **Trim Video feature** downloads only the specified time range, saving bandwidth and storage (requires FFmpeg)
 
 ## License
 
