@@ -208,6 +208,85 @@ def download_playlist(url):
         return False
 
 
+def download_trimmed_video(url):
+    """Download only a trimmed portion of video (no full download)."""
+    ensure_download_dir()
+
+    if not check_ffmpeg():
+        print("\n✗ Error: FFmpeg is required for trimming videos!")
+        print("Please install FFmpeg from: https://ffmpeg.org/download.html")
+        return False
+
+    try:
+        # Get video info first
+        ydl_opts_info = {
+            'quiet': True,
+            'no_warnings': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
+            info = ydl.extract_info(url, download=False)
+            title = info.get('title', 'Unknown')
+            duration = info.get('duration', 0)
+
+        print(f"\nVideo: {title}")
+        if duration:
+            print(f"Duration: {duration//60}m {duration%60}s")
+        print("-" * 50)
+
+        # Get start and end time from user
+        while True:
+            try:
+                start_min = float(input("Enter start time (minutes): ").strip())
+                end_min = float(input("Enter end time (minutes): ").strip())
+
+                if start_min < 0 or end_min <= 0:
+                    print("✗ Times must be positive numbers!")
+                    continue
+                if start_min >= end_min:
+                    print("✗ Start time must be less than end time!")
+                    continue
+                if duration and end_min * 60 > duration:
+                    print(f"✗ End time exceeds video duration ({duration//60}m {duration%60}s)")
+                    continue
+
+                break
+            except ValueError:
+                print("✗ Please enter valid numbers!")
+
+        # Convert to seconds
+        start_sec = start_min * 60
+        end_sec = end_min * 60
+        duration_sec = end_sec - start_sec
+
+        print(f"\nDownloading trimmed section: {start_min}m to {end_min}m")
+        print(f"Duration: {duration_sec:.0f} seconds")
+        print("-" * 50)
+
+        # Download only the section using download_ranges
+        # This downloads ONLY the specified section, not the whole video
+        ydl_opts = {
+            'format': 'bestvideo+bestaudio/best',
+            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s_trimmed_%(start_time)s_to_(end_time)s.%(ext)s'),
+            'merge_output_format': 'mp4',
+            'quiet': False,
+            'no_warnings': False,
+            'download_ranges': lambda info, ctx: [{"start_time": start_sec, "end_time": end_sec}],
+            'force_keyframes_at_cuts': True,  # Ensure smooth cuts at exact times
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        print(f"\n✓ Successfully downloaded trimmed section!")
+        print(f"✓ From {int(start_min)}:{int((start_min%1)*60):02d} to {int(end_min)}:{int((end_min%1)*60):02d}")
+        return True
+
+    except Exception as e:
+        print(f"\n✗ Error: {e}")
+        return False
+
+
 def show_menu():
     """Display main menu."""
     print("\n" + "=" * 50)
@@ -217,6 +296,7 @@ def show_menu():
     print("2. Download Audio Only (MP3)")
     print("3. Download with Quality Selection")
     print("4. Download Playlist")
+    print("5. Download & Trim Video (Partial)")
     print("0. Exit")
     print("=" * 50)
 
@@ -246,7 +326,7 @@ def main():
             print("\nGoodbye!")
             sys.exit(0)
 
-        if choice not in ['1', '2', '3', '4']:
+        if choice not in ['1', '2', '3', '4', '5']:
             print("\nInvalid option. Please try again.")
             continue
 
@@ -264,6 +344,8 @@ def main():
             download_with_quality_selection(url)
         elif choice == '4':
             download_playlist(url)
+        elif choice == '5':
+            download_trimmed_video(url)
 
         print("\n" + "-" * 50)
         input("Press Enter to continue...")
